@@ -1,6 +1,7 @@
 import sys
 import numpy as np
-
+import random
+from featData import *
 datPath = "./income-data/"
 
 
@@ -17,49 +18,66 @@ def featDict(uniqFeat="features.txt"):
             for line in featFile:
                 features.append(line.strip())
     except FileNotFoundError:
-        eprint("%s not found in dir. Please contact students.")
+        eprint("%s not found in dir. Please contact students."% filename )
     features.append("bias")
     fdict = { x: i for i,x in enumerate(features)}
     return fdict
 
 
-#   Input: Filename for formatted income + features, feature mapping to list index
-#   Output:Tuple: ( 2d array :row = data point as binary features , list of y values empty list if none)
+def genWeightVec(size, rand=True):
+    if rand:
+        return np.array( [random.uniform(-1, 1) for _ in range( size )] )
+    else:
+        return np.zeros(size)
 
-def fileToFeature(filename, featMap):
-    filename = datPath + filename   
-    datRows = [] #use normal list for better `.append()` behavior
-    gTruth = []
-    with open(filename, 'r') as dat:
-        for line in dat:
-            parsed = line.strip(' \n,').split(', ')
-            parsed[0], parsed[7] = 'a'+parsed[0], 'h'+parsed[7] #key hack to differ hours from age
-            tmp_row = np.zeros( len(featMap), dtype=np.bool_) #entry arr
-            for feature in parsed[:9]:
-                tmp_row[ featMap[feature] ] = 1     #entry features
-            tmp_row[ featMap['bias'] ] = 1          #bias
-            datRows.append(tmp_row)
 
-            #map hack, append to truth array
-            if parsed[9:10]: gTruth.append( {">50K":1 , "<=50K":-1}.get(parsed[9], None) )
+#generate basic perceptron
+def genPerceptron(trainSet, epochs=5):
+    weight = genWeightVec(len(trainSet.dat[0]) +1)
+    for _ in range(epochs):
 
-    return np.array(datRows), gTruth
+        for featVec,truth in zip( trainSet.dat, trainSet.truth):
+            dotProduct = sum( [ w * xi for w,xi in zip(weight, np.append( featVec, truth) ) ])
+            
+            if dotProduct*truth <=0:    #should this be <0?
+                weight += np.append(featVec*truth, truth)
+        testWeightVector(trainSet, weight)
 
+    return weight
+
+#gen average perceptron
+def genAvgPerceptron(trainSet, epochs=5):
+    pass
+
+#gen MIRA perceptron, default is not aggressive
+def genMIRAPerceptron(trainSet, aggressive=False):
+    pass
+
+def testWeightVector(testSet, weight):
+    wrong = 0
+    right = 0
+    for featVec, truth in zip(testSet.dat, testSet.truth):
+        dotProduct = sum( [w*xi for w,xi in zip(weight, np.append(featVec, truth) ) ] )
+        if dotProduct*truth <=0:
+            wrong+=1
+        else:
+            right+=1
+    print("Percentage wrong = ", wrong/(wrong+right) )
+
+    return None
 
 #func for main execution
 def main():
     featMap = featDict()    
     print("Quantity of features: %d" % len(featMap))
-    input("Press enter to see the dump of unique features. Their value corresponds to their index in the numpy array.")
-    print(featMap)
 
     #usage of feature builder
-    dev, devTruth       = fileToFeature("income.dev.txt", featMap)
-    test, testTruth     = fileToFeature("income.test.txt", featMap) #testTruth is an empty list
-    train, trainTruth   = fileToFeature("income.train.txt", featMap)
+    train   = featData(datPath + "income.train.txt", featMap) #full path, feature map
+    test    = featData(datPath + "income.dev.txt", featMap)
 
-
-
+    weight = genPerceptron(train)
+    testWeightVector(train,weight) #test on training set
+    #testWeightVector(test, weight)
 #pythonic main execution 
 if __name__ == "__main__":
     main()
