@@ -37,8 +37,7 @@ def genPerceptron(trainSet, epochs=5):
     for _ in range(epochs):
 
         for featVec,truth in zip( trainSet.dat, trainSet.truth):
-            dotProduct = sum( [ w * xi for w,xi in zip(weight, np.append( featVec, truth) ) ])
-            
+            dotProduct = np.dot(weight, np.append( featVec, truth) )
             if dotProduct*truth <=0:    #should this be <0?
                 weight += np.append(featVec*truth, truth)
         testWeightVector(trainSet, weight)
@@ -57,7 +56,7 @@ def testWeightVector(testSet, weight):
     wrong = 0
     right = 0
     for featVec, truth in zip(testSet.dat, testSet.truth):
-        dotProduct = sum( [w*xi for w,xi in zip(weight, np.append(featVec, truth) ) ] )
+        dotProduct = np.dot(weight, np.append(featVec, truth))
         if dotProduct*truth <=0:
             wrong+=1
         else:
