@@ -7,7 +7,7 @@ class featData:
     
     def __init__(self, filename):
         self.filen = filename.split('.')[2]
-        self.featMap = self.featDict()
+        self.featDict()
         datRows = []
         gTruth = []
         with open(filename, 'r') as dat:
@@ -28,6 +28,7 @@ class featData:
         return None
 
     def featDict(self, uniqFeat="features.txt"):
+        
         features = [ 'a'+ str(age) for age in range(17,91) ] + ['h'+str(hour) for hour in range(100)]
         try:
             with open(uniqFeat, 'r') as featFile:
@@ -36,10 +37,17 @@ class featData:
         except FileNotFoundError:
             print("{} not found in dir. Please contact students.".format(filename), file=sys.stderr )
         features.append("bias")
-        fdict = { x: i for i,x in enumerate(features)}
-        return fdict
+        self.featMap    = { x: i for i,x in enumerate(features)}
+        self.featUnMap  = { i: x for i,x in enumerate(features)}
+        return None
 
-
+    def getMost(self, weight, n):
+        tmpType = [ ("index", int), ("value", float)]
+        sortW = np.sort(np.array( [(i,x) for i,x in enumerate(weight)], \
+                dtype=tmpType), order="value")[::np.sign(n)*-1]
+        
+        return ["Key:"+ str(self.featUnMap[elem[0]]) + " Weight:"+ str(elem[1]) for elem in sortW[:abs(n)] ]
+          
 
     #shuffle data and truth, use same rng state for same shuffle
     def shuffle(self):

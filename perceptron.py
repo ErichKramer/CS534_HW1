@@ -42,6 +42,8 @@ def genAvgPerceptron(trainSet, naive=False, epochs=5):
     weight = genWeightVec(trainSet.numFeat)
     wPrime = genWeightVec(trainSet.numFeat, rand=False)
     count=1
+    minList = [(0,1)]*3
+    errList = [1]*3
     for _ in range(epochs):
         for featVec,truth in zip( trainSet.dat, trainSet.truth):
             dotProduct = np.dot(weight, featVec )
@@ -55,13 +57,25 @@ def genAvgPerceptron(trainSet, naive=False, epochs=5):
 
                 if naive:   tmpWeight = wPrime/count
                 else:       tmpWeight = weight - (wPrime/count)
-                print(" Epoch number: {}".format( round(count/len(trainSet.dat),2) ))
-                testWeightVector( trainSet, tmpWeight)
-                testWeightVector( dev,      tmpWeight)
-    if naive:
-        return wPrime/count
-    else:
-        return weight - (wPrime/count)
+                epoch = round(count/len(trainSet.dat), 2)
+                errList[0] = testWeightVector( trainSet, weight)
+                errList[1] = testWeightVector( dev, weight)
+                errList[2] = testWeightVector( dev, tmpWeight)
+                
+                for i  in range(3):
+                    if minList[i][1] > errList[i]:
+                        minList[i] = (epoch, errList[i])
+
+                print("Epoch number: {}, train: {} dev: {} avg dev: {}".format( \
+                        epoch ,*errList  ))
+            else:pass
+    
+
+    print("\nMinimums:\nEpoch number: {}, train: {} dev: {} avg train: {}".format( \
+        round(count/len(trainSet.dat),2), *minList  ))
+
+    if naive:   return wPrime/count
+    else:       return weight - (wPrime/count)
 
 #gen MIRA perceptron, default is not aggressive, set p value for margin
 def genMIRA(trainSet, p=0, averaged=True, epochs=5):
@@ -99,8 +113,8 @@ def testWeightVector(testSet, weight):
             wrong+=1
         else:
             right+=1
-    print("Percentage wrong in {}= ".format(testSet.filen), round( wrong/(wrong+right), 5) )
-    return wrong/(wrong+right)
+    #print("Percentage wrong in {}= ".format(testSet.filen), round( wrong/(wrong+right), 5) )
+    return round( wrong/(wrong+right), 4)
 
 #func for main execution
 def main():
@@ -111,11 +125,9 @@ def main():
 
     #weight = genPerceptron(train)
     weight = genAvgPerceptron(train, naive=True)
-    #weight = genMIRA(train, p=.1)
-    #weight = genMIRA(train, p=.5)
-    #weight = genMIRA(train, p=.9)
+    
+    print(*train.getMost(weight, 5), sep = '\n')
 
-    #testWeightVector(train, weight)
 
 #pythonic main execution 
 if __name__ == "__main__":
