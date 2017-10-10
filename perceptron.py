@@ -11,18 +11,6 @@ def eprint(*args, **kwargs):
 
 #create a dictionary that maps features to indexes in an np.array 
 #generate featuers for each individual age and hours, use rules file "features.txt" to find others
-def featDict(uniqFeat="features.txt"):
-    features = [ 'a'+ str(age) for age in range(17,91) ] + ['h'+str(hour) for hour in range(100)]  
-    try:
-        with open(uniqFeat, 'r') as featFile:
-            for line in featFile:
-                features.append(line.strip())
-    except FileNotFoundError:
-        eprint("%s not found in dir. Please contact students."% filename )
-    features.append("bias")
-    fdict = { x: i for i,x in enumerate(features)}
-    return fdict
-
 
 def genWeightVec(size, rand=True):
     if rand:
@@ -33,41 +21,81 @@ def genWeightVec(size, rand=True):
 
 #generate basic perceptron
 def genPerceptron(trainSet, epochs=5):
-    weight = genWeightVec(len(trainSet.dat[0]) +1)
-    eSize = len(trainSet.dat)
-    count=0
+    dev = featData(datPath+"income.dev.txt")
+    weight = genWeightVec(len(trainSet.dat[0]))
+    count=1
     for _ in range(epochs):
         for featVec,truth in zip( trainSet.dat, trainSet.truth):
-            dotProduct = np.dot(weight, np.append( featVec, 1) )
-            if dotProduct*truth <=0:    #should this be <0?
-                weight += np.append(featVec*truth, truth)
+            dotProduct = np.dot(weight, featVec )
+            if dotProduct*truth <=0:
+                weight += featVec*truth#bias = 1, truth*1 = truth increment on bias
             count +=1
             if count %5000==0:
-                print("\nEpoch number: {}".format( round(count/eSize,2) ))
-                testWeightVector(trainSet, weight)
-
+                print(" Epoch number: {}".format( round(count/len(trainSet.dat),2) ))
+                testWeightVector( trainSet, weight)
+                testWeightVector( dev,      weight)
     return weight
 
 #gen average perceptron
 def genAvgPerceptron(trainSet, epochs=5, naive=False):
-    pass
+    dev = featData(datPath+"income.dev.txt")
+    weight = genWeightVec(len(trainSet.dat[0]))
+    wPrime = genWeightVec(len(trainSet.dat[0]), rand=False)
+    count=1
+    for _ in range(epochs):
+        for featVec,truth in zip( trainSet.dat, trainSet.truth):
+            dotProduct = np.dot(weight, featVec )
+            if dotProduct*truth <=0:
+                weight += featVec*truth#bias = 1, truth*1 = truth increment on bias
+                if naive:
+                    wPrime += weight
+                else:
+                    wPrime += count*featVec*truth
+            count +=1
 
-#gen MIRA perceptron, default is not aggressive
-def genMIRAPerceptron(trainSet, aggressive=False):
-    pass
+            if count %5000==0:
 
+                if naive:   genWeight = wPrime/count
+                else:       genWeight = weight - (wPrime/count)
+                print(" Epoch number: {}".format( round(count/len(trainSet.dat),2) ))
+                testWeightVector( trainSet, genWeight)
+                testWeightVector( dev,      genWeight)
+    if naive:
+        return wPrime/count
+    else:
+        return weight - (wPrime/count)
+
+#gen MIRA perceptron, default is not aggressive, set p value for margin
+def genMIRA(trainSet, p=0, epochs=5):
+    
+    dev = featData(datPath+"income.dev.txt")
+    count=1
+    weight = genWeightVec(len(trainSet.dat[0]), False)
+    for _ in range(epochs):
+        for featVec, truth in zip(trainSet.dat, trainSet.truth):
+            dotProd = np.dot(weight, featVec)
+            if dotProd <= p:
+                weight += ((truth - dotProd)/np.dot(featVec, featVec))*featVec   
+            count +=1
+            if count %5000==0:
+                print(" Epoch number: {}".format( round(count/len(trainSet.dat),2) ))
+                testWeightVector( trainSet, weight)
+                testWeightVector( dev,      weight)
+    return weight
+
+
+#change to return string instead of print side effect?
 def testWeightVector(testSet, weight):
     wrong = 0
     right = 0
     for featVec, truth in zip(testSet.dat, testSet.truth):
-        dotProduct = np.dot(weight, np.append(featVec, 1))
+        dotProduct = np.dot(weight, featVec)
         if dotProduct*truth <=0:
             wrong+=1
         else:
             right+=1
-    print("Percentage wrong = ", round( wrong/(wrong+right), 5) )
-
-    return None
+    print("Percentage wrong in {}= ".format(testSet.filen), round( wrong/(wrong+right), 5) )
+    return wrong/(wrong+right)
 
 #func for main execution
 def main():
@@ -76,7 +104,11 @@ def main():
     train   = featData(datPath + "income.train.txt") #full path, feature map
     test    = featData(datPath + "income.dev.txt")
 
-    weight = genPerceptron(train)
+    #weight = genPerceptron(train)
+    #weight = genMIRA(train)
+    weight = genAvgPerceptron(train)
+
+    testWeightVector(train, weight)
 
 #pythonic main execution 
 if __name__ == "__main__":
