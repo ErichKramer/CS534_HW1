@@ -37,7 +37,7 @@ def genPerceptron(trainSet, epochs=5):
     return weight
 
 #gen average perceptron
-def genAvgPerceptron(trainSet, epochs=5, naive=False):
+def genAvgPerceptron(trainSet, naive=False, epochs=5):
     dev = featData(datPath+"income.dev.txt")
     weight = genWeightVec(trainSet.numFeat)
     wPrime = genWeightVec(trainSet.numFeat, rand=False)
@@ -53,11 +53,11 @@ def genAvgPerceptron(trainSet, epochs=5, naive=False):
             count +=1
             if count %5000==0:
 
-                if naive:   genWeight = wPrime/count
-                else:       genWeight = weight - (wPrime/count)
+                if naive:   tmpWeight = wPrime/count
+                else:       tmpWeight = weight - (wPrime/count)
                 print(" Epoch number: {}".format( round(count/len(trainSet.dat),2) ))
-                testWeightVector( trainSet, genWeight)
-                testWeightVector( dev,      genWeight)
+                testWeightVector( trainSet, tmpWeight)
+                testWeightVector( dev,      tmpWeight)
     if naive:
         return wPrime/count
     else:
@@ -73,18 +73,18 @@ def genMIRA(trainSet, p=0, averaged=True, epochs=5):
     for _ in range(epochs):
         for featVec, truth in zip(trainSet.dat, trainSet.truth):
             dotProd = np.dot(weight, featVec)
-            if dotProd <= p:
+            if dotProd*truth <= p:
                 update = ((truth - dotProd)/np.dot(featVec, featVec))*featVec   
                 weight += update   
                 if averaged: wPrime += update*featVec*count
 
             count +=1
             if count %5000==0:
-                if averaged: genWeight = weight - (wPrime/count)
-                else: genWeight = weight
+                if averaged: tmpWeight = weight - (wPrime/count)
+                else: tmpWeight = weight
                 print(" Epoch number: {}".format( round(count/len(trainSet.dat),2) ))
-                testWeightVector( trainSet, genWeight)
-                testWeightVector( dev,      genWeight)
+                testWeightVector( trainSet, tmpWeight)
+                testWeightVector( dev,      tmpWeight)
 
     return weight - (wPrime/count)
 
@@ -110,10 +110,12 @@ def main():
     test    = featData(datPath + "income.dev.txt")
 
     #weight = genPerceptron(train)
-    weight = genMIRA(train)
-    #weight = genAvgPerceptron(train)
+    weight = genAvgPerceptron(train, naive=True)
+    #weight = genMIRA(train, p=.1)
+    #weight = genMIRA(train, p=.5)
+    #weight = genMIRA(train, p=.9)
 
-    testWeightVector(train, weight)
+    #testWeightVector(train, weight)
 
 #pythonic main execution 
 if __name__ == "__main__":
