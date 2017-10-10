@@ -34,13 +34,17 @@ def genWeightVec(size, rand=True):
 #generate basic perceptron
 def genPerceptron(trainSet, epochs=5):
     weight = genWeightVec(len(trainSet.dat[0]) +1)
+    eSize = len(trainSet.dat)
+    count=0
     for _ in range(epochs):
-
         for featVec,truth in zip( trainSet.dat, trainSet.truth):
-            dotProduct = np.dot(weight, np.append( featVec, truth) )
+            dotProduct = np.dot(weight, np.append( featVec, 1) )
             if dotProduct*truth <=0:    #should this be <0?
                 weight += np.append(featVec*truth, truth)
-        testWeightVector(trainSet, weight)
+            count +=1
+            if count %5000==0:
+                print("\nEpoch number: {}".format( round(count/eSize,2) ))
+                testWeightVector(trainSet, weight)
 
     return weight
 
@@ -56,12 +60,12 @@ def testWeightVector(testSet, weight):
     wrong = 0
     right = 0
     for featVec, truth in zip(testSet.dat, testSet.truth):
-        dotProduct = np.dot(weight, np.append(featVec, truth))
+        dotProduct = np.dot(weight, np.append(featVec, 1))
         if dotProduct*truth <=0:
             wrong+=1
         else:
             right+=1
-    print("Percentage wrong = ", wrong/(wrong+right) )
+    print("Percentage wrong = ", round( wrong/(wrong+right), 5) )
 
     return None
 
@@ -75,8 +79,7 @@ def main():
     test    = featData(datPath + "income.dev.txt", featMap)
 
     weight = genPerceptron(train)
-    testWeightVector(train,weight) #test on training set
-    #testWeightVector(test, weight)
+
 #pythonic main execution 
 if __name__ == "__main__":
     main()

@@ -29,7 +29,7 @@ class featData:
     def shuffle(self):
         rng = numpy.random.get_state()
         np.random.shuffle( self.dat )
-        np.random.set_state()
+        np.random.set_state(rng)
         np.random.shuffle( self.truth )
         return None
 
