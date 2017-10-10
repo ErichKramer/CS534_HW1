@@ -49,7 +49,7 @@ def genPerceptron(trainSet, epochs=5):
     return weight
 
 #gen average perceptron
-def genAvgPerceptron(trainSet, epochs=5):
+def genAvgPerceptron(trainSet, epochs=5, naive=False):
     pass
 
 #gen MIRA perceptron, default is not aggressive
@@ -71,12 +71,10 @@ def testWeightVector(testSet, weight):
 
 #func for main execution
 def main():
-    featMap = featDict()    
-    print("Quantity of features: %d" % len(featMap))
 
     #usage of feature builder
-    train   = featData(datPath + "income.train.txt", featMap) #full path, feature map
-    test    = featData(datPath + "income.dev.txt", featMap)
+    train   = featData(datPath + "income.train.txt") #full path, feature map
+    test    = featData(datPath + "income.dev.txt")
 
     weight = genPerceptron(train)
 

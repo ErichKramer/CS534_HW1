@@ -5,7 +5,9 @@ import random
 
 class featData:
     
-    def __init__(self, filename, featMap):
+    def __init__(self, filename):
+        
+        featMap = self.featDict()
         datRows = []
         gTruth = []
         with open(filename, 'r') as dat:
@@ -24,6 +26,20 @@ class featData:
         self.dat, self.truth =  np.array(datRows), np.array(gTruth)
 
         return None
+
+    def featDict(self, uniqFeat="features.txt"):
+        features = [ 'a'+ str(age) for age in range(17,91) ] + ['h'+str(hour) for hour in range(100)]
+        try:
+            with open(uniqFeat, 'r') as featFile:
+                for line in featFile:
+                    features.append(line.strip())
+        except FileNotFoundError:
+            eprint("%s not found in dir. Please contact students."% filename )
+        features.append("bias")
+        fdict = { x: i for i,x in enumerate(features)}
+        return fdict
+
+
 
     #shuffle data and truth, use same rng state for same shuffle
     def shuffle(self):
