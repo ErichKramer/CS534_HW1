@@ -24,7 +24,7 @@ class featData:
                 if parsed[9:10]: gTruth.append( {">50K":1 , "<=50K":-1}.get(parsed[9], None) )
 
         self.dat, self.truth =  np.array(datRows), np.array(gTruth)
-
+        self.numFeat = len(self.dat[0])
         return None
 
     def featDict(self, uniqFeat="features.txt"):

@@ -22,7 +22,7 @@ def genWeightVec(size, rand=True):
 #generate basic perceptron
 def genPerceptron(trainSet, epochs=5):
     dev = featData(datPath+"income.dev.txt")
-    weight = genWeightVec(len(trainSet.dat[0]))
+    weight = genWeightVec(trainSet.numFeat)
     count=1
     for _ in range(epochs):
         for featVec,truth in zip( trainSet.dat, trainSet.truth):
@@ -39,20 +39,18 @@ def genPerceptron(trainSet, epochs=5):
 #gen average perceptron
 def genAvgPerceptron(trainSet, epochs=5, naive=False):
     dev = featData(datPath+"income.dev.txt")
-    weight = genWeightVec(len(trainSet.dat[0]))
-    wPrime = genWeightVec(len(trainSet.dat[0]), rand=False)
+    weight = genWeightVec(trainSet.numFeat)
+    wPrime = genWeightVec(trainSet.numFeat, rand=False)
     count=1
     for _ in range(epochs):
         for featVec,truth in zip( trainSet.dat, trainSet.truth):
             dotProduct = np.dot(weight, featVec )
             if dotProduct*truth <=0:
                 weight += featVec*truth#bias = 1, truth*1 = truth increment on bias
-                if naive:
-                    wPrime += weight
-                else:
-                    wPrime += count*featVec*truth
+                
+                if naive:   wPrime += weight
+                else:       wPrime += count*featVec*truth
             count +=1
-
             if count %5000==0:
 
                 if naive:   genWeight = wPrime/count
@@ -66,22 +64,29 @@ def genAvgPerceptron(trainSet, epochs=5, naive=False):
         return weight - (wPrime/count)
 
 #gen MIRA perceptron, default is not aggressive, set p value for margin
-def genMIRA(trainSet, p=0, epochs=5):
+def genMIRA(trainSet, p=0, averaged=True, epochs=5):
     
     dev = featData(datPath+"income.dev.txt")
-    count=1
-    weight = genWeightVec(len(trainSet.dat[0]), False)
+    weight = genWeightVec(len(trainSet.dat[0]))
+    wPrime = genWeightVec(trainSet.numFeat, False)
+    count=0
     for _ in range(epochs):
         for featVec, truth in zip(trainSet.dat, trainSet.truth):
             dotProd = np.dot(weight, featVec)
             if dotProd <= p:
-                weight += ((truth - dotProd)/np.dot(featVec, featVec))*featVec   
+                update = ((truth - dotProd)/np.dot(featVec, featVec))*featVec   
+                weight += update   
+                if averaged: wPrime += update*featVec*count
+
             count +=1
             if count %5000==0:
+                if averaged: genWeight = weight - (wPrime/count)
+                else: genWeight = weight
                 print(" Epoch number: {}".format( round(count/len(trainSet.dat),2) ))
-                testWeightVector( trainSet, weight)
-                testWeightVector( dev,      weight)
-    return weight
+                testWeightVector( trainSet, genWeight)
+                testWeightVector( dev,      genWeight)
+
+    return weight - (wPrime/count)
 
 
 #change to return string instead of print side effect?
@@ -105,8 +110,8 @@ def main():
     test    = featData(datPath + "income.dev.txt")
 
     #weight = genPerceptron(train)
-    #weight = genMIRA(train)
-    weight = genAvgPerceptron(train)
+    weight = genMIRA(train)
+    #weight = genAvgPerceptron(train)
 
     testWeightVector(train, weight)
 
