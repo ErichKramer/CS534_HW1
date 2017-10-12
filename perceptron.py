@@ -59,7 +59,7 @@ def genAvgPerceptron(trainSet, naive=False, epochs=5):
             count +=1
             
             if count%200==0:
-                if round(count/len(trainSet.dat), w) < 1.00:
+                if round(count/len(trainSet.dat), 2) < 1.00:
                     tmpWeight = weight - (wPrime/count)
                     devErrAvg.append(testWeightVector(dev, weight))
                     devErrSimple.append(testWeightVector(dev, tmpWeight))
@@ -81,20 +81,13 @@ def genAvgPerceptron(trainSet, naive=False, epochs=5):
 
     print("\nMinimums:\nEpoch number: {}, train: {} dev: {} avg train: {}".format( \
         round(count/len(trainSet.dat),2), *minList  ))
-
     
+    trainSet.devErrAvg = devErrAvg
+    trainSet.devErrSimple = devErrSimple
     if naive:   tmpW =  wPrime/count
     else:       tmpW =  weight - (wPrime/count), devErr
-    return tmpW, devErrAvg, devErrSimple
+    return tmpW
 
-def updateMIRA(weight, featVec, truth, p):
-    dotProd = np.dot(weight, featVec)
-    if dotProd*truth <=p:
-        return ((truth - dotProd)/np.dot(featVec, featVec))*featVec   
-    else:
-        return 0
-def updatePerc(weight, featVec, truth, *args):
-    dotProd = np.dot(weight, featVec)
 
 
 #gen MIRA perceptron, default is not aggressive, set p value for margin
@@ -142,13 +135,14 @@ def main():
     #usage of feature builder
     train   = featData(datPath + "income.train.txt") #full path, feature map
     test    = featData(datPath + "income.dev.txt")
-
+    print("Number of features: {}".format(len(train.dat[0])) )
     #weight = genPerceptron(train)
     weight = genAvgPerceptron(train, naive=True)
-    #weight = genMIRA(train)
+    input("Continue:")
     
-    print(*train.getMost(weight, 5), sep = '\n')
-
+    #weight = genMIRA(train)
+    print(*train.getMost(weight, 5), '\n', sep = '\n')
+    print(*train.getMost(weight, -5), sep = '\n')
 
 #pythonic main execution 
 if __name__ == "__main__":
