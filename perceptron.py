@@ -36,14 +36,18 @@ def genPerceptron(trainSet, epochs=5):
                 testWeightVector( dev,      weight)
     return weight
 
+
+
 #gen average perceptron
 def genAvgPerceptron(trainSet, naive=False, epochs=5):
     dev = featData(datPath+"income.dev.txt")
-    weight = genWeightVec(trainSet.numFeat)
+    weight = genWeightVec(trainSet.numFeat, False)
     wPrime = genWeightVec(trainSet.numFeat, rand=False)
     count=1
     minList = [(0,1)]*3
     errList = [1]*3
+    devErrAvg = []
+    devErrSimple = []
     for _ in range(epochs):
         for featVec,truth in zip( trainSet.dat, trainSet.truth):
             dotProduct = np.dot(weight, featVec )
@@ -53,15 +57,19 @@ def genAvgPerceptron(trainSet, naive=False, epochs=5):
                 if naive:   wPrime += weight
                 else:       wPrime += count*featVec*truth
             count +=1
+            
+            if count%200==0:
+                if round(count/len(trainSet.dat), w) < 1.00:
+                    tmpWeight = weight - (wPrime/count)
+                    devErrAvg.append(testWeightVector(dev, weight))
+                    devErrSimple.append(testWeightVector(dev, tmpWeight))
             if count %5000==0:
-
                 if naive:   tmpWeight = wPrime/count
                 else:       tmpWeight = weight - (wPrime/count)
                 epoch = round(count/len(trainSet.dat), 2)
                 errList[0] = testWeightVector( trainSet, weight)
                 errList[1] = testWeightVector( dev, weight)
                 errList[2] = testWeightVector( dev, tmpWeight)
-                
                 for i  in range(3):
                     if minList[i][1] > errList[i]:
                         minList[i] = (epoch, errList[i])
@@ -74,8 +82,20 @@ def genAvgPerceptron(trainSet, naive=False, epochs=5):
     print("\nMinimums:\nEpoch number: {}, train: {} dev: {} avg train: {}".format( \
         round(count/len(trainSet.dat),2), *minList  ))
 
-    if naive:   return wPrime/count
-    else:       return weight - (wPrime/count)
+    
+    if naive:   tmpW =  wPrime/count
+    else:       tmpW =  weight - (wPrime/count), devErr
+    return tmpW, devErrAvg, devErrSimple
+
+def updateMIRA(weight, featVec, truth, p):
+    dotProd = np.dot(weight, featVec)
+    if dotProd*truth <=p:
+        return ((truth - dotProd)/np.dot(featVec, featVec))*featVec   
+    else:
+        return 0
+def updatePerc(weight, featVec, truth, *args):
+    dotProd = np.dot(weight, featVec)
+
 
 #gen MIRA perceptron, default is not aggressive, set p value for margin
 def genMIRA(trainSet, p=0, averaged=True, epochs=5):
@@ -90,15 +110,15 @@ def genMIRA(trainSet, p=0, averaged=True, epochs=5):
             if dotProd*truth <= p:
                 update = ((truth - dotProd)/np.dot(featVec, featVec))*featVec   
                 weight += update   
-                if averaged: wPrime += update*featVec*count
+                if averaged: wPrime += update*count
 
             count +=1
             if count %5000==0:
                 if averaged: tmpWeight = weight - (wPrime/count)
                 else: tmpWeight = weight
                 print(" Epoch number: {}".format( round(count/len(trainSet.dat),2) ))
-                testWeightVector( trainSet, tmpWeight)
-                testWeightVector( dev,      tmpWeight)
+                print( "Train err: ", testWeightVector( trainSet, tmpWeight))
+                print( "Dev Err: ", testWeightVector( dev,      tmpWeight))
 
     return weight - (wPrime/count)
 
@@ -125,6 +145,7 @@ def main():
 
     #weight = genPerceptron(train)
     weight = genAvgPerceptron(train, naive=True)
+    #weight = genMIRA(train)
     
     print(*train.getMost(weight, 5), sep = '\n')
 
