@@ -41,13 +41,17 @@ class featData:
         self.featUnMap  = { i: x for i,x in enumerate(features)}
         return None
 
-    def getMost(self, weight, n):
+    def getMost(self, weight, n, *args):
         tmpType = [ ("index", int), ("value", float)]
-        sortW = np.sort(np.array( [(i,x) for i,x in enumerate(weight)], \
-                dtype=tmpType), order="value")[::np.sign(n)*-1]
-        
-        return ["Key:"+ str(self.featUnMap[elem[0]]) + " Weight:"+ str(elem[1]) for elem in sortW[:abs(n)] ]
-          
+        tmp = []
+        if args:
+            tmp += [ "Key: {}  Weight: {}".format(x, weight[self.featMap[x]]) for x in args ] 
+        if n != 0:
+            sortW = np.sort(np.array( [(i,x) for i,x in enumerate(weight)], \
+                    dtype=tmpType), order="value")[::np.sign(n)*-1]
+            tmp += ["Key:"+ str(self.featUnMap[elem[0]]) + " Weight:"+ str(elem[1]) for elem in sortW[:abs(n)] ]  
+        tmp.append('\n')
+        return tmp
 
     #shuffle data and truth, use same rng state for same shuffle
     def shuffle(self):

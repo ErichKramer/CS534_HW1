@@ -1,4 +1,5 @@
-import sys
+import sys, time
+import matplotlib.pyplot as plt
 import numpy as np
 import random
 from featData import *
@@ -39,30 +40,38 @@ def genPerceptron(trainSet, epochs=5):
 
 
 #gen average perceptron
-def genAvgPerceptron(trainSet, naive=False, epochs=5):
+def genAvgPerceptron(trainSet, naive=False, graph=False, epochs=5):
     dev = featData(datPath+"income.dev.txt")
     weight = genWeightVec(trainSet.numFeat, False)
     wPrime = genWeightVec(trainSet.numFeat, rand=False)
     count=1
     minList = [(0,1)]*3
     errList = [1]*3
-    devErrAvg = []
-    devErrSimple = []
+    if graph:
+        trainSet.devErrAvg = []
+        trainSet.devErrSimple = []
+    
     for _ in range(epochs):
         for featVec,truth in zip( trainSet.dat, trainSet.truth):
             dotProduct = np.dot(weight, featVec )
+            
+            if naive: wPrime +=weight
             if dotProduct*truth <=0:
-                weight += featVec*truth#bias = 1, truth*1 = truth increment on bias
+
+                update = featVec*truth
                 
-                if naive:   wPrime += weight
-                else:       wPrime += count*featVec*truth
+                weight += update#bias = 1, truth*1 = truth increment on bias
+                
+                #if naive:   wPrime += weight
+                if not naive:       wPrime += count*update
             count +=1
             
-            if count%200==0:
+            if count%200==0 and graph:
                 if round(count/len(trainSet.dat), 2) < 1.00:
-                    tmpWeight = weight - (wPrime/count)
-                    devErrAvg.append(testWeightVector(dev, weight))
-                    devErrSimple.append(testWeightVector(dev, tmpWeight))
+                    if naive:tmpWeight = wPrime/count
+                    else:tmpWeight = weight - (wPrime/count)
+                    trainSet.devErrAvg.append(testWeightVector(dev, weight))
+                    trainSet.devErrSimple.append(testWeightVector(dev, tmpWeight))
             if count %5000==0:
                 if naive:   tmpWeight = wPrime/count
                 else:       tmpWeight = weight - (wPrime/count)
@@ -82,10 +91,8 @@ def genAvgPerceptron(trainSet, naive=False, epochs=5):
     print("\nMinimums:\nEpoch number: {}, train: {} dev: {} avg train: {}".format( \
         round(count/len(trainSet.dat),2), *minList  ))
     
-    trainSet.devErrAvg = devErrAvg
-    trainSet.devErrSimple = devErrSimple
     if naive:   tmpW =  wPrime/count
-    else:       tmpW =  weight - (wPrime/count), devErr
+    else:       tmpW =  weight - (wPrime/count)
     return tmpW
 
 
@@ -129,6 +136,10 @@ def testWeightVector(testSet, weight):
     #print("Percentage wrong in {}= ".format(testSet.filen), round( wrong/(wrong+right), 5) )
     return round( wrong/(wrong+right), 4)
 
+
+
+
+
 #func for main execution
 def main():
 
@@ -137,16 +148,41 @@ def main():
     test    = featData(datPath + "income.dev.txt")
     print("Number of features: {}".format(len(train.dat[0])) )
     #weight = genPerceptron(train)
-    weight = genAvgPerceptron(train, naive=True)
-    input("Continue:")
+    currTime = time.time()
+    weight = genAvgPerceptron(train, graph=True, naive=True)
+    timeTaken = time.time()-currTime
+    print("Time taken for naive = {}".format(timeTaken))
+
+    currTime = time.time()
+    weight = genAvgPerceptron(train, naive=False)
+    timeTaken = time.time()-currTime
+    print("Time taken for smart = {}".format(timeTaken))
     
+    input("Continue?")
+    rg = [ i*200 for i,_ in enumerate(train.devErrSimple)]
+    
+    plt.plot(rg , train.devErrSimple, 'r--', label="Basic Perceptron")
+    plt.plot(rg, train.devErrAvg, 'b--', label="Average Perceptron")
+    plt.ylabel("Error Rate")
+    plt.xlabel("Number of data points (Epoch 1.00)")
+    plt.title("First epoch simple vs. average perceptron")
+    plt.show()
+    plt.savefig('epoch_perceptron.png')
+    
+   
+
     #weight = genMIRA(train)
-    print(*train.getMost(weight, 5), '\n', sep = '\n')
+    print(*train.getMost(weight, 5), sep = '\n')
     print(*train.getMost(weight, -5), sep = '\n')
+    print(*train.getMost(weight, 0, "Male", "Female"), sep = '\n')
+
+    input("Continue?")
+
 
 #pythonic main execution 
 if __name__ == "__main__":
     main()
+
 
 
 
