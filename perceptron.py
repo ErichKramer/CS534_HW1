@@ -86,7 +86,6 @@ def genAvgPerceptron(trainSet, naive=False, graph=False, epochs=5):
                 print("Epoch number: {}, train: {} dev: {} avg dev: {}".format( \
                         epoch ,*errList  ))
             else:pass
-    
 
     print("\nMinimums:\nEpoch number: {}, train: {} dev: {} avg train: {}".format( \
         round(count/len(trainSet.dat),2), *minList  ))
@@ -103,6 +102,7 @@ def genMIRA(trainSet, p=0, averaged=True, epochs=5):
     dev = featData(datPath+"income.dev.txt")
     weight = genWeightVec(len(trainSet.dat[0]))
     wPrime = genWeightVec(trainSet.numFeat, False)
+    tmpList = [0]*3
     count=0
     for _ in range(epochs):
         for featVec, truth in zip(trainSet.dat, trainSet.truth):
@@ -116,10 +116,12 @@ def genMIRA(trainSet, p=0, averaged=True, epochs=5):
             if count %5000==0:
                 if averaged: tmpWeight = weight - (wPrime/count)
                 else: tmpWeight = weight
-                print(" Epoch number: {}".format( round(count/len(trainSet.dat),2) ))
-                print( "Train err: ", testWeightVector( trainSet, tmpWeight))
-                print( "Dev Err: ", testWeightVector( dev,      tmpWeight))
-
+                trnErr = testWeightVector(trainSet, weight)
+                devErr = testWeightVector(dev, weight)
+                avgErr = testWeightVector(dev, tmpWeight)
+                
+                print("[MIRA] Epoch number: {}, train: {} dev: {} avgDev: {}".format( \
+                        round(count/len(trainSet.dat),2), trnErr, devErr, avgErr ))
     return weight - (wPrime/count)
 
 
@@ -146,6 +148,7 @@ def main():
     #usage of feature builder
     train   = featData(datPath + "income.train.txt") #full path, feature map
     test    = featData(datPath + "income.dev.txt")
+
     print("Number of features: {}".format(len(train.dat[0])) )
     #weight = genPerceptron(train)
     currTime = time.time()
@@ -161,13 +164,14 @@ def main():
     input("Continue?")
     rg = [ i*200 for i,_ in enumerate(train.devErrSimple)]
     
+    plt.figure(figsize=(20,10))
     plt.plot(rg , train.devErrSimple, 'r--', label="Basic Perceptron")
     plt.plot(rg, train.devErrAvg, 'b--', label="Average Perceptron")
     plt.ylabel("Error Rate")
     plt.xlabel("Number of data points (Epoch 1.00)")
     plt.title("First epoch simple vs. average perceptron")
-    plt.show()
     plt.savefig('epoch_perceptron.png')
+    plt.show()
     
    
 
@@ -177,7 +181,7 @@ def main():
     print(*train.getMost(weight, 0, "Male", "Female"), sep = '\n')
 
     input("Continue?")
-
+    genMIRA(train)
 
 #pythonic main execution 
 if __name__ == "__main__":
