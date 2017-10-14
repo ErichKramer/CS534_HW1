@@ -12,24 +12,51 @@ class featData:
         gTruth = []
         with open(filename, 'r') as dat:
             for line in dat:
-                parsed = line.strip(' \n,').split(', ')#strip removes an trailling in the string
-                parsed[0], parsed[7] = 'a'+parsed[0], 'h'+parsed[7] #key hack to differ hours from age
-                tmp_row = np.zeros( len(self.featMap), dtype=np.int) #entry arr
-                for feature in parsed[:9]:
-                    tmp_row[ self.featMap[feature] ] = 1     #entry features
-                tmp_row[ self.featMap['bias'] ] = 1          #bias
-                datRows.append(tmp_row)
-
-                #map hack, append to truth array
-                if parsed[9:10]: gTruth.append( {">50K":1 , "<=50K":-1}.get(parsed[9], None) )
+                row, truth = self.parseBinQuant(line)
+                datRows.append(row)
+                if truth: gTruth.append(truth)
 
         self.dat, self.truth =  np.array(datRows), np.array(gTruth)
         self.numFeat = len(self.dat[0])
         return None
+    
+    def parseString(self, line):
+        parsed = line.strip(' \n,').split(', ')#strip removes an trailling in the string
+        parsed[0], parsed[7] = 'a'+parsed[0], 'h'+parsed[7] #key hack to differ hours from age
+        tmp_row = np.zeros( len(self.featMap), dtype=np.int) #entry arr
+        t = None
+        for feature in parsed[:9]:
+            tmp_row[ self.featMap[feature] ] = 1     #entry features
+        tmp_row[ self.featMap['bias'] ] = 1          #bias
+        if parsed[9:10]: t =  {">50K":1 , "<=50K":-1}.get(parsed[9], None)#bad hack 
+        return tmp_row, t
+
+    def parseBinQuant(self, line):
+        parsed = line.strip(' \n,').split(', ')
+        parsed[0], parsed[7] = 'a'+parsed[0], 'h'+parsed[7] #key hack to differ hours from age
+        tmp_row = np.zeros( len(self.featMap), dtype=np.int) #entry arr
+        t = None
+
+        #add original age and horus values at the end of the feature vector
+        #this did not result in an improvement
+        #tmp_row = np.append(tmp_row, int(parsed[0][1:]))
+        #tmp_row = np.append(tmp_row, int(parsed[7][1:]))
+
+        for feature in parsed[:9]:
+            if feature[1:].isdigit():
+                tmp_row[self.featMap[ feature[0] +str(((int(feature[1:])+5)//10)*10) ] ] =1
+                pass
+            else:
+                tmp_row[self.featMap[feature]] = 1
+
+        tmp_row[self.featMap['bias']] =1
+        if parsed[9:10]: t =  {">50K":1 , "<=50K":-1}.get(parsed[9], None)#bad hack 
+        return tmp_row, t 
+
 
     def featDict(self, uniqFeat="features.txt"):
         
-        features = [ 'a'+ str(age) for age in range(17,91) ] + ['h'+str(hour) for hour in range(100)]
+        features = [ 'a'+ str(age) for age in range(17,91) ] + ['h'+str(hour) for hour in range(101)]
         try:
             with open(uniqFeat, 'r') as featFile:
                 for line in featFile:
@@ -61,6 +88,10 @@ class featData:
         np.random.shuffle( self.truth )
         return None
 
-
+    def reorder(self):
+        p=self.truth.argsort()
+        self.truth = self.truth[p]
+        self.dat = self.dat[p]  
+        return None
 
 

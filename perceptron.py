@@ -55,15 +55,14 @@ def genAvgPerceptron(trainSet, naive=False, graph=False, epochs=5):
         for featVec,truth in zip( trainSet.dat, trainSet.truth):
             dotProduct = np.dot(weight, featVec )
             
-            if naive: wPrime +=weight
+            #if naive: wPrime +=weight
             if dotProduct*truth <=0:
 
                 update = featVec*truth
-                
                 weight += update#bias = 1, truth*1 = truth increment on bias
                 
-                #if naive:   wPrime += weight
                 if not naive:       wPrime += count*update
+                else:               wPrime +=weight
             count +=1
             
             if count%200==0 and graph:
@@ -138,8 +137,27 @@ def testWeightVector(testSet, weight):
     #print("Percentage wrong in {}= ".format(testSet.filen), round( wrong/(wrong+right), 5) )
     return round( wrong/(wrong+right), 4)
 
+#outputs a new file with predicted brackets
+def predict(fobj, filename, weight):
+    pos = 0
+    total = 0
+    with open(filename, 'r') as test, open("prediction.txt", 'w') as oFile:
+        for line in test:
+            line = line.strip('\n')
+            featVec, _ = fobj.parseBinQuant(line)
+            pred = np.dot(featVec, weight)
+            
+            if pred > 0:
+                line += " >50K"
+                print( line, file=oFile)
+                pos+=1
+            else:
+                line += " <=50K"
+                print( line, file=oFile)
+                pass
+            total+=1
 
-
+    pass
 
 
 #func for main execution
@@ -147,7 +165,10 @@ def main():
 
     #usage of feature builder
     train   = featData(datPath + "income.train.txt") #full path, feature map
-    test    = featData(datPath + "income.dev.txt")
+    test    = featData(datPath + "income.test.txt")
+
+
+    genMIRA(train, averaged=False)
 
     print("Number of features: {}".format(len(train.dat[0])) )
     #weight = genPerceptron(train)
@@ -161,6 +182,9 @@ def main():
     timeTaken = time.time()-currTime
     print("Time taken for smart = {}".format(timeTaken))
     
+
+    predict(test, datPath + "income.test.txt", weight)
+
     input("Continue?")
     rg = [ i*200 for i,_ in enumerate(train.devErrSimple)]
     
@@ -181,7 +205,6 @@ def main():
     print(*train.getMost(weight, 0, "Male", "Female"), sep = '\n')
 
     input("Continue?")
-    genMIRA(train)
 
 #pythonic main execution 
 if __name__ == "__main__":
