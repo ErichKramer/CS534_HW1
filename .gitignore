@@ -1,2 +1,4 @@
-income-data/
-__pycache__/
+HW1/income-data/
+HW2/income-data
+HW1/__pycache__/
+HW2/__pycache__/

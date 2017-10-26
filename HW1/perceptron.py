@@ -165,8 +165,8 @@ def main():
 
     #usage of feature builder
     train   = featData(datPath + "income.train.txt") #full path, feature map
+    dev     = featData(datPath + "income.dev.txt")
     test    = featData(datPath + "income.test.txt")
-
 
     genMIRA(train, averaged=False)
 
@@ -201,8 +201,16 @@ def main():
 
     #weight = genMIRA(train)
     print(*train.getMost(weight, 5), sep = '\n')
-    print(*train.getMost(weight, -5), sep = '\n')
+    print(*train.getMost(weight, len(weight)), sep = '\n')
     print(*train.getMost(weight, 0, "Male", "Female"), sep = '\n')
+
+    i = 0
+    for featVec, truth in zip(dev.dat, dev.truth):
+        i +=1
+        dotProduct = np.dot(weight, featVec)
+        if dotProduct*truth <=0:
+            print(i)
+            
 
     input("Continue?")
 
